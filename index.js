@@ -1,7 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -19,19 +20,19 @@ async function run() {
       deprecationErrors: true,
     },
   });
+  
+  const TouristSpotsCollection = client
+  .db("touristsDB")
+  .collection("touristsSpots");
 
   try {
     await client.connect();
     console.log("Connected to MongoDB");
 
-    const TouristSpotsCollection = client
-      .db("touristsDB")
-      .collection("touristsSpots");
 
     app.post("/TouristSpots", async (req, res) => {
       try {
         const newTouristSpots = req.body;
-        console.log(newTouristSpots);
         const result = await TouristSpotsCollection.insertOne(newTouristSpots);
         res.send(result);
       } catch (error) {
@@ -40,12 +41,25 @@ async function run() {
       }
     });
 
+    app.get("/TouristSpots", async (req, res) => {
+      const cursor = TouristSpotsCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
     app.listen(port, () => {
       console.log(`Server Running on port: ${port}`);
     });
   } catch (error) {
     console.error("Error connecting to MongoDB:", error);
   }
+
+  app.delete("/TouristSpots/:id", async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const result = await TouristSpotsCollection.deleteOne(query);
+    res.send(result);
+  });
 }
 
 run();
